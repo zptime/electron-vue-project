@@ -4,12 +4,15 @@
 
 #### 参考网址
 
+* [demo地址](https://juejin.im/post/5c585ff7f265da2d8532b553)
 * [vue官网](https://vuejs.org/v2/guide/)
 * [vue-cli官网](https://cli.vuejs.org/)
 * [Electron官网](https://electronjs.org/docs)
 * [Electron中文文档](https://wizardforcel.gitbooks.io/electron-doc/content/index.html)
 * [Electron-vue官网](https://simulatedgreg.gitbooks.io/electron-vue/cn/)
 * [Vue-CLI3 Electron](https://nklayman.github.io/vue-cli-plugin-electron-builder/guide/#installation)
+* [BootstrapVue](https://bootstrap-vue.js.org/docs)
+* [electron-vue 音乐播放器](https://learnku.com/articles/14791/music-player-based-on-electron-vue-development)
 
 #### V0.0.1 起步
 
