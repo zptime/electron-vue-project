@@ -56,6 +56,14 @@ let rendererConfig = {
         use: ['vue-style-loader', 'css-loader', 'less-loader']
       },
       {
+        test: /\.styl(us)?$/, // add
+        use: [
+          'vue-style-loader',
+          'css-loader',
+          'stylus-loader'
+        ]
+      },
+      {
         test: /\.css$/,
         use: ['vue-style-loader', 'css-loader']
       },
@@ -81,7 +89,8 @@ let rendererConfig = {
             loaders: {
               sass: 'vue-style-loader!css-loader!sass-loader?indentedSyntax=1',
               scss: 'vue-style-loader!css-loader!sass-loader',
-              less: 'vue-style-loader!css-loader!less-loader'
+              less: 'vue-style-loader!css-loader!less-loader',
+              stylus: 'vue-style-loader!css-loader!stylus-loader' // add
             }
           }
         }
@@ -146,7 +155,10 @@ let rendererConfig = {
   resolve: {
     alias: {
       '@': path.join(__dirname, '../src/renderer'),
-      'vue$': 'vue/dist/vue.esm.js'
+      'vue$': 'vue/dist/vue.esm.js',
+      'utils': path.join(__dirname, '../src/renderer/utils'), // add
+      '~': path.join(__dirname, '../src'), // add
+      'root': path.join(__dirname, '../') // add
     },
     extensions: ['.js', '.vue', '.json', '.css', '.node']
   },
