@@ -1,5 +1,6 @@
 'use strict'
 
+// 针对为浏览器构建 renderer 进程的源代码
 process.env.BABEL_ENV = 'web'
 
 const path = require('path')

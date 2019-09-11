@@ -1,5 +1,6 @@
 # Commented sections below can be used to run tests on the CI server
 # https://simulatedgreg.gitbooks.io/electron-vue/content/en/testing.html#on-the-subject-of-ci-testing
+# 该配置文件被设置好了用于构建你的 electron 应用，并将生成的程序推送到 GitHub 的发布页面、Bintray 等。AppVeyor 用于构建 win32。该服务是免费的 OSS 项目。
 version: 0.1.{build}
 
 branches:

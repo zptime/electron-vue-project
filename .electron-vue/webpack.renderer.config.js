@@ -1,5 +1,6 @@
 'use strict'
 
+// 针对 electron 的 renderer 进程配置
 process.env.BABEL_ENV = 'renderer'
 
 const path = require('path')

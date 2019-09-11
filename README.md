@@ -1,16 +1,15 @@
 ### electron-vue-project
 
-> An electron-vue project
 ![electron-vue](https://github.com/zptime/resources/blob/master/images/electron-vue.PNG)
 
 #### 参考网址
 
+* [vue官网](https://vuejs.org/v2/guide/)
+* [vue-cli官网](https://cli.vuejs.org/)
 * [Electron官网](https://electronjs.org/docs)
 * [Electron中文文档](https://wizardforcel.gitbooks.io/electron-doc/content/index.html)
 * [Electron-vue官网](https://simulatedgreg.gitbooks.io/electron-vue/cn/)
 * [Vue-CLI3 Electron](https://nklayman.github.io/vue-cli-plugin-electron-builder/guide/#installation)
-* [vue-cli官网](https://cli.vuejs.org/)
-* [vue挂网](https://vuejs.org/v2/guide/)
 
 #### V0.0.1 起步
 

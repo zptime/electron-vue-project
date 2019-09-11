@@ -1,5 +1,6 @@
 'use strict'
 
+// 针对 electron 的 main 进程配置
 process.env.BABEL_ENV = 'main'
 
 const path = require('path')
