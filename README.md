@@ -1,4 +1,4 @@
-# electron-vue-project
+### electron-vue-project
 
 > An electron-vue project
 
@@ -25,4 +25,26 @@ npm run lint
 
 ---
 
-This project was generated with [electron-vue](https://github.com/SimulatedGREG/electron-vue)@[8fae476](https://github.com/SimulatedGREG/electron-vue/tree/8fae4763e9d225d3691b627e83b9e09b56f6c935) using [vue-cli](https://github.com/vuejs/vue-cli). Documentation about the original structure can be found [here](https://simulatedgreg.gitbooks.io/electron-vue/content/index.html).
+#### 参考网址
+
+* [Electron官网](https://electronjs.org/docs)
+* [Electron中文文档](https://wizardforcel.gitbooks.io/electron-doc/content/index.html)
+* [Electron-vue官网](https://simulatedgreg.gitbooks.io/electron-vue/cn/)
+* [Vue-CLI3 Electron](https://nklayman.github.io/vue-cli-plugin-electron-builder/guide/#installation)
+* [vue-cli官网](https://cli.vuejs.org/)
+
+#### 起步
+
+>electron-vue 官方推荐 yarn 作为软件包管理器，因为它可以更好地处理依赖关系，并可以使用 yarn clean 帮助减少最后构建文件的大小
+
+``` bash
+# 安装 vue-cli 和 脚手架样板代码
+npm install -g vue-cli
+vue init simulatedgreg/electron-vue my-project
+
+# 安装依赖并运行你的程序
+cd my-project
+yarn # 或者 npm install
+yarn run dev # 或者 npm run dev
+
+```
