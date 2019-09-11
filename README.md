@@ -1,29 +1,7 @@
 ### electron-vue-project
 
 > An electron-vue project
-
-#### Build Setup
-
-``` bash
-# install dependencies
-npm install
-
-# serve with hot reload at localhost:9080
-npm run dev
-
-# build electron application for production
-npm run build
-
-# run unit & end-to-end tests
-npm test
-
-
-# lint all JS/Vue component files in `src/`
-npm run lint
-
-```
-
----
+![electron-vue](https://github.com/zptime/resources/blob/master/images/electron-vue.PNG)
 
 #### 参考网址
 
@@ -32,8 +10,9 @@ npm run lint
 * [Electron-vue官网](https://simulatedgreg.gitbooks.io/electron-vue/cn/)
 * [Vue-CLI3 Electron](https://nklayman.github.io/vue-cli-plugin-electron-builder/guide/#installation)
 * [vue-cli官网](https://cli.vuejs.org/)
+* [vue挂网](https://vuejs.org/v2/guide/)
 
-#### 起步
+#### V0.0.1 起步
 
 >electron-vue 官方推荐 yarn 作为软件包管理器，因为它可以更好地处理依赖关系，并可以使用 yarn clean 帮助减少最后构建文件的大小
 
@@ -47,4 +26,15 @@ cd my-project
 yarn # 或者 npm install
 yarn run dev # 或者 npm run dev
 
+# build electron application for production
+npm run build
+
+# run unit & end-to-end tests
+npm test
+
+# lint all JS/Vue component files in `src/`
+npm run lint
+
 ```
+
+---
