@@ -1,11 +1,38 @@
 'use strict'
 
-import { app, BrowserWindow, Tray, Menu, dialog, clipboard } from 'electron'
-
+import Uploader from './utils/uploader.js'
+import {
+  app,
+  BrowserWindow,
+  Tray,
+  Menu,
+  Notification,
+  clipboard,
+  ipcMain,
+  globalShortcut,
+  dialog,
+  systemPreferences
+} from 'electron'
 import db from '../datastore' // 引入db
+import beforeOpen from './utils/beforeOpen'
+import pasteTemplate from './utils/pasteTemplate'
+// import updateChecker from './utils/updateChecker'
 import { getPicBeds } from './utils/getPicBeds'
 import pkg from '../../package.json'
+import picgoCoreIPC from './utils/picgoCoreIPC'
 import fixPath from 'fix-path'
+import { getUploadFiles } from './utils/handleArgv'
+import bus from './utils/eventBus'
+import {
+  updateShortKeyFromVersion212
+} from './migrate/shortKeyUpdateHelper'
+import {
+  shortKeyUpdater,
+  initShortKeyRegister
+} from './utils/shortKeyRegister'
+if (process.platform === 'darwin') {
+  beforeOpen()
+}
 /**
  * Set `__static` path to static files in production
  * https://simulatedgreg.gitbooks.io/electron-vue/content/en/using-static-assets.html
@@ -23,9 +50,9 @@ let miniWindow
 let tray
 let menu
 let contextMenu
-// const winURL = process.env.NODE_ENV === 'development'
-//   ? `http://localhost:9080`
-//   : `file://${__dirname}/index.html`
+const winURL = process.env.NODE_ENV === 'development'
+  ? `http://localhost:9080`
+  : `file://${__dirname}/index.html`
 // 在electron下，vue-router请不要使用history模式，而使用默认的hash模式(带#号)。
 const settingWinURL = process.env.NODE_ENV === 'development'
   ? `http://localhost:9080/#setting/upload`
@@ -134,7 +161,7 @@ function createTray () {
           imgUrl
         })
       }
-      // toggleWindow(bounds) // 打开或关闭小窗口
+      toggleWindow(bounds) // 打开或关闭小窗口
       setTimeout(() => {
         // webContents其实是BrowserWindow实例的一个属性。也就是如果我们需要在main进程里给某个窗口某个页面发送消息，则必须通过win.webContents.send()方法来发送。
         // In renderer process --> TrayPage.vue
@@ -154,19 +181,45 @@ function createTray () {
         settingWindow.show()
         settingWindow.focus()
       }
+      if (miniWindow) {
+        miniWindow.hide()
+      }
     }
   })
 
   // 拖拽事件
   tray.on('drag-enter', () => { // 当刚拖拽到icon上时
-    tray.setImage(`${__static}/upload.png`)
+    if (systemPreferences.isDarkMode()) {
+      tray.setImage(`${__static}/upload-dark.png`)
+    } else {
+      tray.setImage(`${__static}/upload.png`)
+    }
   })
 
   tray.on('drag-end', () => { // 当拖拽事件结束时
     tray.setImage(`${__static}/menubar.png`)
   })
+  tray.on('drop-files', async (event, files) => {
+    const pasteStyle = db.read().get('settings.pasteStyle').value() || 'markdown'
+    const imgs = await new Uploader(files, window.webContents).upload()
+    if (imgs !== false) {
+      for (let i in imgs) {
+        clipboard.writeText(pasteTemplate(pasteStyle, imgs[i]))
+        const notification = new Notification({
+          title: '上传成功',
+          body: imgs[i].imgUrl,
+          icon: files[i]
+        })
+        setTimeout(() => {
+          notification.show()
+        }, i * 100)
+        db.read().get('uploaded').insert(imgs[i]).write()
+      }
+      window.webContents.send('dragFiles', imgs)
+    }
+  })
+  // toggleWindow()
 }
-
 // 小窗口
 const createWindow = () => {
   if (process.platform !== 'darwin' && process.platform !== 'win32') {
@@ -237,7 +290,7 @@ const createMiniWidow = () => {
 }
 
 // 主窗口
-function createSettingWindow () {
+const createSettingWindow = () => {
   /**
    * Initial window options
    */
@@ -328,18 +381,240 @@ const showWindow = (bounds) => {
   window.show()
   window.focus()
 }
+
+const uploadClipboardFiles = async () => {
+  let win
+  if (miniWindow.isVisible()) {
+    win = miniWindow
+  } else {
+    win = settingWindow || window || createSettingWindow()
+  }
+  let img = await new Uploader(undefined, win.webContents).upload()
+  if (img !== false) {
+    if (img.length > 0) {
+      const pasteStyle = db.read().get('settings.pasteStyle').value() || 'markdown'
+      clipboard.writeText(pasteTemplate(pasteStyle, img[0]))
+      const notification = new Notification({
+        title: '上传成功',
+        body: img[0].imgUrl,
+        icon: img[0].imgUrl
+      })
+      notification.show()
+      db.read().get('uploaded').insert(img[0]).write()
+      window.webContents.send('clipboardFiles', [])
+      window.webContents.send('uploadFiles', img)
+      if (settingWindow) {
+        settingWindow.webContents.send('updateGallery')
+      }
+    } else {
+      const notification = new Notification({
+        title: '上传不成功',
+        body: '你剪贴板最新的一条记录不是图片哦'
+      })
+      notification.show()
+    }
+  }
+}
+
+const uploadChoosedFiles = async (webContents, files) => {
+  const input = files.map(item => item.path)
+  const imgs = await new Uploader(input, webContents).upload()
+  if (imgs !== false) {
+    const pasteStyle = db.read().get('settings.pasteStyle').value() || 'markdown'
+    let pasteText = ''
+    for (let i in imgs) {
+      pasteText += pasteTemplate(pasteStyle, imgs[i]) + '\r\n'
+      const notification = new Notification({
+        title: '上传成功',
+        body: imgs[i].imgUrl,
+        icon: files[i].path
+      })
+      setTimeout(() => {
+        notification.show()
+      }, i * 100)
+      db.read().get('uploaded').insert(imgs[i]).write()
+    }
+    clipboard.writeText(pasteText)
+    window.webContents.send('uploadFiles', imgs)
+    if (settingWindow) {
+      settingWindow.webContents.send('updateGallery')
+    }
+  }
+}
+
+picgoCoreIPC(app, ipcMain)
+
+// from macOS tray
+ipcMain.on('uploadClipboardFiles', async (evt, file) => {
+  const img = await new Uploader(undefined, window.webContents).upload()
+  if (img !== false) {
+    const pasteStyle = db.read().get('settings.pasteStyle').value() || 'markdown'
+    clipboard.writeText(pasteTemplate(pasteStyle, img[0]))
+    const notification = new Notification({
+      title: '上传成功',
+      body: img[0].imgUrl,
+      // icon: file[0]
+      icon: img[0].imgUrl
+    })
+    notification.show()
+    db.read().get('uploaded').insert(img[0]).write()
+    window.webContents.send('clipboardFiles', [])
+    if (settingWindow) {
+      settingWindow.webContents.send('updateGallery')
+    }
+  }
+  window.webContents.send('uploadFiles')
+})
+
+ipcMain.on('uploadClipboardFilesFromUploadPage', () => {
+  uploadClipboardFiles()
+})
+
+ipcMain.on('uploadChoosedFiles', async (evt, files) => {
+  return uploadChoosedFiles(evt.sender, files)
+})
+
+ipcMain.on('updateShortKey', (evt, item) => {
+  shortKeyUpdater(globalShortcut, item)
+  const notification = new Notification({
+    title: '操作成功',
+    body: '你的快捷键已经修改成功'
+  })
+  notification.show()
+})
+
+ipcMain.on('updateCustomLink', (evt, oldLink) => {
+  const notification = new Notification({
+    title: '操作成功',
+    body: '你的自定义链接格式已经修改成功'
+  })
+  notification.show()
+})
+
+ipcMain.on('autoStart', (evt, val) => {
+  app.setLoginItemSettings({
+    openAtLogin: val
+  })
+})
+
+ipcMain.on('openSettingWindow', (evt) => {
+  if (!settingWindow) {
+    createSettingWindow()
+  } else {
+    settingWindow.show()
+  }
+  miniWindow.hide()
+})
+
+ipcMain.on('openMiniWindow', (evt) => {
+  if (!miniWindow) {
+    createMiniWidow()
+  }
+  miniWindow.show()
+  miniWindow.focus()
+  settingWindow.hide()
+})
+
+//  from mini window
+ipcMain.on('syncPicBed', (evt) => {
+  if (settingWindow) {
+    settingWindow.webContents.send('syncPicBed')
+  }
+})
+
+ipcMain.on('getPicBeds', (evt) => {
+  const picBeds = getPicBeds(app)
+  evt.sender.send('getPicBeds', picBeds)
+  evt.returnValue = picBeds
+})
+
+ipcMain.on('updateShortKey', (evt, val) => {
+  // console.log(val)
+})
+
+// const shortKeyHash = {
+//   upload: uploadClipboardFiles
+// }
+
+// 在 macOS 上, 当用户尝试在 Finder 中打开您的应用程序的第二个实例时, 系统会通过发出 open-file 和 open-url 事件来自动强制执行单个实例,。 但是当用户在命令行中启动应用程序时, 系统的单实例机制将被绕过, 您必须手动调用此方法来确保单实例。
+const gotTheLock = app.requestSingleInstanceLock()
+// 上面方法报错：electron__WEBPACK_IMPORTED_MODULE_3__.app.requestSingleInstanceLock is not a function
+// 参考一：requestSingleInstanceLock替换为makeSingleInstance  实践无效
+// const gotTheLock = app.makeSingleInstance()
+// electron2.0--app.makeSingleInstance来实现单实例；electron4.0--app.requestSingleInstanceLock()
+
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    let files = getUploadFiles(commandLine, workingDirectory)
+    if (files === null || files.length > 0) { // 如果有文件列表作为参数，说明是命令行启动
+      if (files === null) {
+        uploadClipboardFiles()
+      } else {
+        let win
+        if (miniWindow && miniWindow.isVisible()) {
+          win = miniWindow
+        } else {
+          win = settingWindow || window || createSettingWindow()
+        }
+        uploadChoosedFiles(win.webContents, files)
+      }
+    } else {
+      if (settingWindow) {
+        if (settingWindow.isMinimized()) {
+          settingWindow.restore()
+        }
+        settingWindow.focus()
+      }
+    }
+  })
+}
+
+if (process.platform === 'win32') {
+  app.setAppUserModelId(pkg.build.appId)
+}
+
+if (process.env.XDG_CURRENT_DESKTOP && process.env.XDG_CURRENT_DESKTOP.includes('Unity')) {
+  process.env.XDG_CURRENT_DESKTOP = 'Unity'
+}
+
 app.on('ready', () => {
   createWindow()
   createSettingWindow()
   if (process.platform === 'darwin' || process.platform === 'win32') {
     createTray()
   }
+  db.read().set('needReload', false).write()
+  // updateChecker() // 提示版本更新的弹框
+  initEventCenter()
+  // 不需要阻塞
+  process.nextTick(() => {
+    updateShortKeyFromVersion212(db, db.read().get('settings.shortKey').value())
+    initShortKeyRegister(globalShortcut, db.read().get('settings.shortKey').value())
+  })
+
+  if (process.env.NODE_ENV !== 'development') {
+    let files = getUploadFiles()
+    if (files === null || files.length > 0) { // 如果有文件列表作为参数，说明是命令行启动
+      if (files === null) {
+        uploadClipboardFiles()
+      } else {
+        let win
+        if (miniWindow && miniWindow.isVisible()) {
+          win = miniWindow
+        } else {
+          win = settingWindow || window || createSettingWindow()
+        }
+        uploadChoosedFiles(win.webContents, files)
+      }
+    }
+  }
 })
 
-// 在windows平台上，通常我们把应用的窗口都关了之后也就默认把这个应用给退出了。而如果在macOS系统上却不是这样。我们把应用的窗口关闭了，但是并非完全退出这个应用。
-app.on('window-all-closed', () => { // 当窗口都被关闭了
-  if (process.platform !== 'darwin') { // 如果不是macOS
-    app.quit() // 应用退出
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
   }
 })
 
@@ -352,6 +627,23 @@ app.on('activate', () => {
   }
 })
 
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll()
+  bus.removeAllListeners()
+})
+
+app.setLoginItemSettings({
+  openAtLogin: db.read().get('settings.autoStart').value() || false
+})
+
+function initEventCenter () {
+  const eventList = {
+    'picgo:upload': uploadClipboardFiles
+  }
+  for (let i in eventList) {
+    bus.on(i, eventList[i])
+  }
+}
 /**
  * Auto Updater
  *
