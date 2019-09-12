@@ -41,13 +41,13 @@ npm run lint
 
 ---
 
-### v0.0.2
+### v0.0.2 Tray，Menu配置
 
 * stylus支持
 * Tray图标组件：鼠标事件配置，包括左键、右键、拖拽等
-* Memu菜单项配置
+* Menu菜单项配置
 
-### v0.0.3
+### v0.0.3 lowdb配置
 
 * [Main进程和Renderer进程](https://molunerfinn.com/electron-vue-2/#%E5%89%8D%E8%A8%80)
 * [lowdb数据库](https://molunerfinn.com/electron-vue-3/)

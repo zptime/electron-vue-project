@@ -3,7 +3,9 @@
 import { app, BrowserWindow, Tray, Menu, dialog, clipboard } from 'electron'
 
 import db from '../datastore' // 引入db
+import { getPicBeds } from './utils/getPicBeds'
 import pkg from '../../package.json'
+import fixPath from 'fix-path'
 /**
  * Set `__static` path to static files in production
  * https://simulatedgreg.gitbooks.io/electron-vue/content/en/using-static-assets.html
@@ -15,9 +17,12 @@ if (process.env.DEBUG_ENV === 'debug') {
   global.__static = require('path').join(__dirname, '../../static').replace(/\\/g, '\\\\')
 }
 
+let window
 let settingWindow
+let miniWindow
 let tray
 let menu
+let contextMenu
 // const winURL = process.env.NODE_ENV === 'development'
 //   ? `http://localhost:9080`
 //   : `file://${__dirname}/index.html`
@@ -25,9 +30,29 @@ let menu
 const settingWinURL = process.env.NODE_ENV === 'development'
   ? `http://localhost:9080/#setting/upload`
   : `file://${__dirname}/index.html#setting/upload`
+const miniWinURL = process.env.NODE_ENV === 'development'
+  ? `http://localhost:9080/#mini-page`
+  : `file://${__dirname}/index.html#mini-page`
+
+// fix the $PATH in macOS
+fixPath()
 
 function createContextMenu () {
-  const contextMenu = Menu.buildFromTemplate([
+  const picBeds = getPicBeds(app)
+  const submenu = picBeds.map(item => {
+    return {
+      label: item.name,
+      type: 'radio',
+      checked: db.read().get('picBed.current').value() === item.type,
+      click () {
+        db.read().set('picBed.current', item.type).write()
+        if (settingWindow) {
+          settingWindow.webContents.send('syncPicBed')
+        }
+      }
+    }
+  })
+  contextMenu = Menu.buildFromTemplate([
     {
       label: '关于',
       click () {
@@ -48,57 +73,30 @@ function createContextMenu () {
           settingWindow.show()
           settingWindow.focus()
         }
+        if (miniWindow) {
+          miniWindow.hide()
+        }
       }
     },
     {
       label: '选择默认图床',
       type: 'submenu',
-      submenu: [
-        {
-          label: '微博图床',
-          type: 'radio',
-          checked: db.read().get('picBed.current').value() === 'weibo',
-          click () {
-            db.read().set('picBed.current', 'weibo')
-              .write()
-          }
-        },
-        {
-          label: '七牛图床',
-          type: 'radio',
-          checked: db.read().get('picBed.current').value() === 'qiniu',
-          click () {
-            db.read().set('picBed.current', 'qiniu')
-              .write()
-          }
-        },
-        {
-          label: '腾讯云COS',
-          type: 'radio',
-          checked: db.read().get('picBed.current').value() === 'tcyun',
-          click () {
-            db.read().set('picBed.current', 'tcyun')
-              .write()
-          }
-        },
-        {
-          label: '又拍云图床',
-          type: 'radio',
-          checked: db.read().get('picBed.current').value() === 'upyun',
-          click () {
-            db.read().set('picBed.current', 'upyun')
-              .write()
-          }
-        }
-      ]
+      submenu
     },
     {
       label: '打开更新助手',
       type: 'checkbox',
-      checked: db.get('picBed.showUpdateTip').value(),
+      checked: db.get('settings.showUpdateTip').value(),
       click () {
-        const value = db.read().get('picBed.showUpdateTip').value()
-        db.read().set('picBed.showUpdateTip', !value).write()
+        const value = db.read().get('settings.showUpdateTip').value()
+        db.read().set('settings.showUpdateTip', !value).write()
+      }
+    },
+    {
+      label: '重启应用',
+      click () {
+        app.relaunch()
+        app.exit(0)
       }
     },
     {
@@ -106,8 +104,6 @@ function createContextMenu () {
       label: '退出'
     }
   ])
-
-  return contextMenu
 }
 
 function createTray () {
@@ -117,9 +113,12 @@ function createTray () {
 
   // 鼠标左键、右键事件
   tray.on('right-click', () => { // 鼠标右键点击事件
-    window.hide() // 隐藏小窗口
+    if (window) {
+      window.hide() // 隐藏小窗口
+    }
     // Tray另一个重要的作用就是开启菜单项
-    tray.popUpContextMenu(createContextMenu()) // 打开菜单
+    createContextMenu()
+    tray.popUpContextMenu(contextMenu) // 打开菜单
   })
   // 兼容性处理：macOS的顶部栏图标可以接受拖拽事件，所以就针对macOS的顶部栏制作了顶部栏图标对应的小窗口。让大部分操作不经过主窗口也能实现。而对于windows而言，没有顶部栏，取而代之的是位于底部栏的右侧的任务栏，通常点击任务栏里的图标就会把应用的主窗口调出来
   tray.on('click', (event, bounds) => { // 鼠标左键点击事件
@@ -145,7 +144,9 @@ function createTray () {
         window.webContents.send('clipboardFiles', obj)
       }, 0)
     } else { // 如果是windows
-      window.hide() // 隐藏小窗口
+      if (window) {
+        window.hide() // 隐藏小窗口
+      }
       if (settingWindow === null) { // 如果主窗口不存在就创建一个
         createSettingWindow() // 创建
         settingWindow.show() // 并打开
@@ -166,6 +167,76 @@ function createTray () {
   })
 }
 
+// 小窗口
+const createWindow = () => {
+  if (process.platform !== 'darwin' && process.platform !== 'win32') {
+    return
+  }
+  window = new BrowserWindow({
+    height: 350,
+    width: 196, // 196
+    show: false,
+    frame: false,
+    fullscreenable: false,
+    resizable: false,
+    transparent: true,
+    vibrancy: 'ultra-dark',
+    webPreferences: {
+      nodeIntegration: true,
+      nodeIntegrationInWorker: true,
+      backgroundThrottling: false
+    }
+  })
+
+  window.loadURL(winURL)
+
+  window.on('closed', () => {
+    window = null
+  })
+
+  window.on('blur', () => {
+    window.hide()
+  })
+  return window
+}
+
+// 迷你窗口
+const createMiniWidow = () => {
+  if (miniWindow) {
+    return false
+  }
+  let obj = {
+    height: 64,
+    width: 64,
+    show: process.platform === 'linux',
+    frame: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    resizable: false,
+    transparent: process.platform !== 'linux',
+    icon: `${__static}/logo.png`,
+    webPreferences: {
+      backgroundThrottling: false,
+      nodeIntegration: true,
+      nodeIntegrationInWorker: true
+    }
+  }
+
+  if (db.read().get('settings.miniWindowOntop').value()) {
+    obj.alwaysOnTop = true
+  }
+
+  miniWindow = new BrowserWindow(obj)
+
+  miniWindow.loadURL(miniWinURL)
+
+  miniWindow.on('closed', () => {
+    miniWindow = null
+  })
+  return miniWindow
+}
+
+// 主窗口
 function createSettingWindow () {
   /**
    * Initial window options
@@ -207,9 +278,12 @@ function createSettingWindow () {
 
   settingWindow.on('closed', () => {
     settingWindow = null
+    if (process.platform === 'linux') {
+      app.quit()
+    }
   })
-
   createMenu()
+  createMiniWidow()
   return settingWindow
 }
 
@@ -240,7 +314,22 @@ const createMenu = () => {
   }
 }
 
+const toggleWindow = (bounds) => {
+  if (window.isVisible()) {
+    window.hide()
+  } else {
+    showWindow(bounds)
+  }
+}
+
+const showWindow = (bounds) => {
+  window.setPosition(bounds.x - 98 + 11, bounds.y, false)
+  window.webContents.send('updateFiles')
+  window.show()
+  window.focus()
+}
 app.on('ready', () => {
+  createWindow()
   createSettingWindow()
   if (process.platform === 'darwin' || process.platform === 'win32') {
     createTray()
@@ -255,6 +344,9 @@ app.on('window-all-closed', () => { // 当窗口都被关闭了
 })
 
 app.on('activate', () => {
+  if (window === null) {
+    createWindow()
+  }
   if (settingWindow === null) {
     createSettingWindow()
   }

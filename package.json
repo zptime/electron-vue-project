@@ -57,6 +57,7 @@
   },
   "dependencies": {
     "axios": "^0.18.0",
+    "fix-path": "^2.1.0",
     "fs-extra": "^8.1.0",
     "lodash-id": "^0.14.0",
     "lowdb": "^1.0.0",
