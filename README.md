@@ -52,3 +52,4 @@ npm run lint
 * [Main进程和Renderer进程](https://molunerfinn.com/electron-vue-2/#%E5%89%8D%E8%A8%80)
 * [lowdb数据库](https://molunerfinn.com/electron-vue-3/)
 * [跨平台兼容](https://molunerfinn.com/electron-vue-4/)
+* main进程相关配置及通信配置：main/index.js，main/utils
