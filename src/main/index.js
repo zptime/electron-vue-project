@@ -1,8 +1,8 @@
 'use strict'
 
-import { app, BrowserWindow, Tray, Menu, dialog } from 'electron'
+import { app, BrowserWindow, Tray, Menu, dialog, clipboard } from 'electron'
 
-import db from '../datastore'
+import db from '../datastore' // 引入db
 import pkg from '../../package.json'
 /**
  * Set `__static` path to static files in production
@@ -18,9 +18,13 @@ if (process.env.DEBUG_ENV === 'debug') {
 let settingWindow
 let tray
 let menu
-const winURL = process.env.NODE_ENV === 'development'
-  ? `http://localhost:9080`
-  : `file://${__dirname}/index.html`
+// const winURL = process.env.NODE_ENV === 'development'
+//   ? `http://localhost:9080`
+//   : `file://${__dirname}/index.html`
+// 在electron下，vue-router请不要使用history模式，而使用默认的hash模式(带#号)。
+const settingWinURL = process.env.NODE_ENV === 'development'
+  ? `http://localhost:9080/#setting/upload`
+  : `file://${__dirname}/index.html#setting/upload`
 
 function createContextMenu () {
   const contextMenu = Menu.buildFromTemplate([
@@ -117,14 +121,34 @@ function createTray () {
     // Tray另一个重要的作用就是开启菜单项
     tray.popUpContextMenu(createContextMenu()) // 打开菜单
   })
-  tray.on('click', () => { // 鼠标左键点击事件
-    if (process.platform === 'darwin') { // 如果是macOS
-      // toggleWindow() // 打开或关闭小窗口
+  // 兼容性处理：macOS的顶部栏图标可以接受拖拽事件，所以就针对macOS的顶部栏制作了顶部栏图标对应的小窗口。让大部分操作不经过主窗口也能实现。而对于windows而言，没有顶部栏，取而代之的是位于底部栏的右侧的任务栏，通常点击任务栏里的图标就会把应用的主窗口调出来
+  tray.on('click', (event, bounds) => { // 鼠标左键点击事件
+    if (process.platform === 'darwin') { // 如果是macOS平台
+      let img = clipboard.readImage()
+      let obj = []
+      if (!img.isEmpty()) {
+        // 从剪贴板来的图片默认转为png
+        const imgUrl = 'data:image/png;base64,' + Buffer.from(img.toPNG(), 'binary').toString('base64')
+        obj.push({
+          width: img.getSize().width,
+          height: img.getSize().height,
+          imgUrl
+        })
+      }
+      // toggleWindow(bounds) // 打开或关闭小窗口
+      setTimeout(() => {
+        // webContents其实是BrowserWindow实例的一个属性。也就是如果我们需要在main进程里给某个窗口某个页面发送消息，则必须通过win.webContents.send()方法来发送。
+        // In renderer process --> TrayPage.vue
+        // ipcRenderer.on('clipboardFiles', (event, files) => {
+        //   console.log(files)
+        // })
+        window.webContents.send('clipboardFiles', obj)
+      }, 0)
     } else { // 如果是windows
       window.hide() // 隐藏小窗口
       if (settingWindow === null) { // 如果主窗口不存在就创建一个
-        createSettingWindow()
-        settingWindow.show()
+        createSettingWindow() // 创建
+        settingWindow.show() // 并打开
       } else { // 如果主窗口在，就显示并激活
         settingWindow.show()
         settingWindow.focus()
@@ -140,6 +164,53 @@ function createTray () {
   tray.on('drag-end', () => { // 当拖拽事件结束时
     tray.setImage(`${__static}/menubar.png`)
   })
+}
+
+function createSettingWindow () {
+  /**
+   * Initial window options
+   */
+  const options = {
+    height: 450,
+    // useContentSize: true,
+    width: 800,
+    show: false, // 创建后是否显示
+    frame: true, // 是否创建frameless窗口,详情：https://electronjs.org/docs/api/frameless-window
+    fullscreenable: false, // 是否允许全屏
+    center: true, // 是否出现在屏幕居中的位置
+    backgroundColor: '#3f3c37', // 背景色，用于transparent和frameless窗口
+    title: 'PicGo',
+    // 隐藏系统默认的titleBar，隐藏顶部栏的横条，把操作按钮嵌入窗口。自定义实现
+    titleBarStyle: 'hidden', // 标题栏的样式，有hidden、hiddenInset、customButtonsOnHover等
+    // resizable: false, // 是否允许拉伸大小
+    transparent: true, // 是否是透明窗口（仅macOS）
+    vibrancy: 'ultra-dark', // 窗口模糊的样式（仅macOS）
+    webPreferences: {
+      backgroundThrottling: false, // 当页面被置于非激活窗口的时候是否停止动画和计时器
+      nodeIntegration: true,
+      nodeIntegrationInWorker: true,
+      webSecurity: false
+    }
+  }
+
+  // process.platform判断不同平台：'aix' 'darwin'(macOS) 'freebsd' 'linux'(Linue) 'openbsd' 'sunos' 'win32'(windows)
+  if (process.platform !== 'darwin') { // 针对不是macOS(即windows 或者 linux)平台做出不同配置
+    options.show = true // 创建即展示
+    // options.frame = false // 创建一个frameless窗口，此时窗口没有自带顶部栏和菜单栏
+    options.transparent = false
+    options.icon = `${__static}/logo.png`
+  }
+  settingWindow = new BrowserWindow(options)
+
+  // 加载窗口的URL -> 来自renderer进程的页面
+  settingWindow.loadURL(settingWinURL)
+
+  settingWindow.on('closed', () => {
+    settingWindow = null
+  })
+
+  createMenu()
+  return settingWindow
 }
 
 // Menu组件，既能够生成系统菜单项，也能实现绑定应用常用快捷键的功能。
@@ -169,58 +240,23 @@ const createMenu = () => {
   }
 }
 
-function createSettingWindow () {
-  /**
-   * Initial window options
-   */
-  const options = {
-    height: 450,
-    // useContentSize: true,
-    width: 800,
-    show: false, // 创建后是否显示
-    frame: true, // 是否创建frameless窗口
-    fullscreenable: false, // 是否允许全屏
-    center: true, // 是否出现在屏幕居中的位置
-    backgroundColor: '#3f3c37', // 背景色，用于transparent和frameless窗口
-    title: 'PicGo',
-    titleBarStyle: 'hidden', // 标题栏的样式，有hidden、hiddenInset、customButtonsOnHover等
-    resizable: false, // 是否允许拉伸大小
-    transparent: true, // 是否是透明窗口（仅macOS）
-    vibrancy: 'ultra-dark', // 窗口模糊的样式（仅macOS）
-    webPreferences: {
-      backgroundThrottling: false, // 当页面被置于非激活窗口的时候是否停止动画和计时器
-      nodeIntegration: true,
-      nodeIntegrationInWorker: true,
-      webSecurity: false
-    }
+app.on('ready', () => {
+  createSettingWindow()
+  if (process.platform === 'darwin' || process.platform === 'win32') {
+    createTray()
   }
-  if (process.platform !== 'darwin') { // 针对不是macOS(即windows 或者 linux)平台做出不同配置
-    options.show = true // 创建即展示
-    // options.frame = false // 创建一个frameless窗口，此时窗口没有自带顶部栏和菜单栏
-    options.transparent = false
-    options.icon = `${__static}/logo.png`
-  }
-  settingWindow = new BrowserWindow(options)
+})
 
-  // 加载窗口的URL -> 来自renderer进程的页面
-  settingWindow.loadURL(winURL)
-
-  settingWindow.on('closed', () => {
-    settingWindow = null
-  })
-}
-
-app.on('ready', createWindow)
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
+// 在windows平台上，通常我们把应用的窗口都关了之后也就默认把这个应用给退出了。而如果在macOS系统上却不是这样。我们把应用的窗口关闭了，但是并非完全退出这个应用。
+app.on('window-all-closed', () => { // 当窗口都被关闭了
+  if (process.platform !== 'darwin') { // 如果不是macOS
+    app.quit() // 应用退出
   }
 })
 
 app.on('activate', () => {
-  if (mainWindow === null) {
-    createWindow()
+  if (settingWindow === null) {
+    createSettingWindow()
   }
 })
 

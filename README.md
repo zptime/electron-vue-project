@@ -4,7 +4,7 @@
 
 #### 参考网址
 
-* [demo地址](https://juejin.im/post/5c585ff7f265da2d8532b553)
+* [实战demo地址](https://juejin.im/post/5c585ff7f265da2d8532b553)
 * [vue官网](https://vuejs.org/v2/guide/)
 * [vue-cli官网](https://cli.vuejs.org/)
 * [Electron官网](https://electronjs.org/docs)
@@ -46,3 +46,9 @@ npm run lint
 * stylus支持
 * Tray图标组件：鼠标事件配置，包括左键、右键、拖拽等
 * Memu菜单项配置
+
+### v0.0.3
+
+* [Main进程和Renderer进程](https://molunerfinn.com/electron-vue-2/#%E5%89%8D%E8%A8%80)
+* [lowdb数据库](https://molunerfinn.com/electron-vue-3/)
+* [跨平台兼容](https://molunerfinn.com/electron-vue-4/)
