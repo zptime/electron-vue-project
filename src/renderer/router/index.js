@@ -26,6 +26,18 @@ export default new Router({
       component: require('@/components/LandingPage').default
     },
     {
+      path: '/setting',
+      name: 'setting-page',
+      component: require('@/layouts/SettingPage').default,
+      children: [
+        {
+          path: 'upload',
+          component: require('@/pages/Upload').default,
+          name: 'upload'
+        }
+      ]
+    },
+    {
       path: '*',
       redirect: '/'
     }

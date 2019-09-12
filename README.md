@@ -53,3 +53,4 @@ npm run lint
 * [lowdb数据库](https://molunerfinn.com/electron-vue-3/)
 * [跨平台兼容](https://molunerfinn.com/electron-vue-4/)
 * main进程相关配置及通信配置：main/index.js，main/utils
+* 上传页面 @/pages/Upload
