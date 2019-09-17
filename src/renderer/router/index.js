@@ -34,7 +34,7 @@ export default new Router({
           path: 'upload',
           component: require('@/pages/Upload').default, // 首页 图片上传
           name: 'upload'
-        }
+        },
         // {
         //   path: 'gallery',
         //   component: require('@/pages/Gallery').default,
@@ -43,6 +43,16 @@ export default new Router({
         //     keepAlive: true
         //   }
         // }
+        {
+          path: 'setting',
+          component: require('@/pages/PicGoSetting').default, // PicGo设置·
+          name: 'setting'
+        },
+        {
+          path: 'shortcut-page',
+          component: require('@/pages/ShortCutPage').default,
+          name: 'shortcut-page'
+        }
       ]
     },
     {

@@ -86,7 +86,9 @@
         </el-col>
       </el-row>
     </el-dialog>
-    <!-- <el-dialog
+
+    <!-- PicGoSetting.vue中“修改上传快捷键”设置 -->
+    <el-dialog
       title="修改快捷键"
       :visible.sync="keyBindingVisible"
     >
@@ -108,8 +110,9 @@
         <el-button @click="cancelKeyBinding">取消</el-button>
         <el-button type="primary" @click="confirmKeyBinding">确定</el-button>
       </span>
-    </el-dialog> -->
-    <!-- <el-dialog
+    </el-dialog>
+
+    <el-dialog
       title="自定义链接格式"
       :visible.sync="customLinkVisible"
     >
@@ -137,8 +140,9 @@
         <el-button @click="cancelCustomLink">取消</el-button>
         <el-button type="primary" @click="confirmCustomLink">确定</el-button>
       </span>
-    </el-dialog> -->
-    <!-- <el-dialog
+    </el-dialog>
+
+    <el-dialog
       :title="inputBoxOptions.title || '输入框'"
       :visible.sync="showInputBoxVisible"
       :modal-append-to-body="false"
@@ -151,12 +155,12 @@
         <el-button @click="showInputBoxVisible = false" round>取消</el-button>
         <el-button type="primary" @click="showInputBoxVisible = false" round>确定</el-button>
       </span>
-    </el-dialog> -->
+    </el-dialog>
   </div>
 </template>
 <script>
 import pkg from 'root/package.json'
-// import keyDetect from 'utils/key-binding'
+import keyDetect from 'utils/key-binding'
 import { remote } from 'electron'
 import db from '~/datastore'
 import mixin from '@/utils/mixin'
@@ -165,13 +169,13 @@ export default {
   name: 'setting-page',
   mixins: [mixin],
   data () {
-    // const customLinkRule = (rule, value, callback) => {
-    //   if (!/\$url/.test(value)) {
-    //     return callback(new Error('必须含有$url'))
-    //   } else {
-    //     return callback()
-    //   }
-    // }
+    const customLinkRule = (rule, value, callback) => {
+      if (!/\$url/.test(value)) {
+        return callback(new Error('必须含有$url'))
+      } else {
+        return callback()
+      }
+    }
     return {
       version: process.env.NODE_ENV === 'production' ? pkg.version : 'Dev',
       defaultActive: 'upload',
@@ -182,8 +186,23 @@ export default {
       customLink: {
         value: db.read().get('customLink').value() || '$url'
       },
+      rules: {
+        value: [
+          { validator: customLinkRule, trigger: 'blur' }
+        ]
+      },
       os: '',
-      picBed: []
+      shortKey: {
+        upload: db.read().get('shortKey.upload').value()
+      },
+      picBed: [],
+      // for showInputBox
+      showInputBoxVisible: false,
+      inputBoxValue: '',
+      inputBoxOptions: {
+        title: '',
+        placeholder: ''
+      }
     }
   },
   created () {
@@ -255,6 +274,34 @@ export default {
     openDialog () {
       // 打开左下角提示框 buildMenu
       this.menu.popup(remote.getCurrentWindow())
+    },
+    keyDetect (type, event) {
+      this.shortKey[type] = keyDetect(event).join('+')
+    },
+    cancelKeyBinding () {
+      this.keyBindingVisible = false
+      this.shortKey = db.read().get('shortKey').value()
+    },
+    confirmKeyBinding () {
+      const oldKey = db.read().get('shortKey').value()
+      db.read().set('shortKey', this.shortKey).write()
+      this.keyBindingVisible = false
+      this.$electron.ipcRenderer.send('updateShortKey', oldKey)
+    },
+    cancelCustomLink () {
+      this.customLinkVisible = false
+      this.customLink.value = db.read().get('customLink').value() || '$url'
+    },
+    confirmCustomLink () {
+      this.$refs.customLink.validate((valid) => {
+        if (valid) {
+          db.read().set('customLink', this.customLink.value).write()
+          this.customLinkVisible = false
+          this.$electron.ipcRenderer.send('updateCustomLink')
+        } else {
+          return false
+        }
+      })
     },
     openMiniWindow () {
       this.$electron.ipcRenderer.send('openMiniWindow')
