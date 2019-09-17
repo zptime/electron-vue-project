@@ -35,6 +35,51 @@ export default new Router({
           component: require('@/pages/Upload').default, // 首页 图片上传
           name: 'upload'
         },
+        {
+          path: 'weibo',
+          component: require('@/pages/picbeds/Weibo').default, // 微博
+          name: 'weibo'
+        },
+        {
+          path: 'qiniu',
+          component: require('@/pages/picbeds/Qiniu').default, // 七牛
+          name: 'qiniu'
+        },
+        {
+          path: 'tcyun',
+          component: require('@/pages/picbeds/TcYun').default, // 腾讯云
+          name: 'tcyun'
+        },
+        {
+          path: 'upyun',
+          component: require('@/pages/picbeds/UpYun').default, // 又拍云
+          name: 'upyun'
+        },
+        {
+          path: 'github',
+          component: require('@/pages/picbeds/GitHub').default, // github
+          name: 'github'
+        },
+        {
+          path: 'smms',
+          component: require('@/pages/picbeds/SMMS').default, // SM.MS
+          name: 'smms'
+        },
+        {
+          path: 'aliyun',
+          component: require('@/pages/picbeds/AliYun').default, // 阿里云
+          name: 'aliyun'
+        },
+        {
+          path: 'imgur',
+          component: require('@/pages/picbeds/Imgur').default, // imgur
+          name: 'imgur'
+        },
+        {
+          path: 'others/:type',
+          component: require('@/pages/picbeds/Others').default, // 其他云
+          name: 'others'
+        },
         // {
         //   path: 'gallery',
         //   component: require('@/pages/Gallery').default,

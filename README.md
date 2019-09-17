@@ -62,3 +62,15 @@ npm run lint
 报错：Uncaught e:\local\electron-vue-project\node_modules\blueimp-gallery\css\blueimp-gallery.min.css:1
 * picgo设置 PicGoSetting.vue  ShortCutPage.vue(修改快捷键)
 * plugin 插件设置 Plugin.vue  components/ConfigForm.vue  lodash
+
+### v0.0.5 二级导航页
+
+* SM.MS图床 page/picbeds/SMMS.vue  utils/ConfirmButtonMixin
+* 腾讯云COS page/picbeds/TcYun.vue
+* 微博图床 page/picbeds/Weibo.vue
+* github图床 page/picbeds/Github.vue
+* 七牛图床 page/picbeds/Qiniu.vue
+* Imgurl图床 page/picbeds/Imgur.vue
+* 阿里云OSS page/picbeds/AliYun.vue
+* 又拍云图床 page/picbeds/UpYun.vue
+* 其他 Others.vue
