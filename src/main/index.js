@@ -382,6 +382,7 @@ const showWindow = (bounds) => {
   window.focus()
 }
 
+// 剪贴板图片上传 upload.vue
 const uploadClipboardFiles = async () => {
   let win
   if (miniWindow.isVisible()) {
@@ -394,7 +395,7 @@ const uploadClipboardFiles = async () => {
     if (img.length > 0) {
       const pasteStyle = db.read().get('settings.pasteStyle').value() || 'markdown'
       clipboard.writeText(pasteTemplate(pasteStyle, img[0]))
-      const notification = new Notification({
+      const notification = new Notification({ // 上传成功弹框
         title: '上传成功',
         body: img[0].imgUrl,
         icon: img[0].imgUrl
@@ -407,7 +408,7 @@ const uploadClipboardFiles = async () => {
         settingWindow.webContents.send('updateGallery')
       }
     } else {
-      const notification = new Notification({
+      const notification = new Notification({ // 上传失败弹框
         title: '上传不成功',
         body: '你剪贴板最新的一条记录不是图片哦'
       })
@@ -416,6 +417,7 @@ const uploadClipboardFiles = async () => {
   }
 }
 
+// 图片上传（点击上传、拖拽上传）upload.vue
 const uploadChoosedFiles = async (webContents, files) => {
   const input = files.map(item => item.path)
   const imgs = await new Uploader(input, webContents).upload()
@@ -424,7 +426,7 @@ const uploadChoosedFiles = async (webContents, files) => {
     let pasteText = ''
     for (let i in imgs) {
       pasteText += pasteTemplate(pasteStyle, imgs[i]) + '\r\n'
-      const notification = new Notification({
+      const notification = new Notification({// 成功提示弹框
         title: '上传成功',
         body: imgs[i].imgUrl,
         icon: files[i].path
@@ -466,6 +468,7 @@ ipcMain.on('uploadClipboardFiles', async (evt, file) => {
   window.webContents.send('uploadFiles')
 })
 
+// 剪贴板图片上传 upload.vue
 ipcMain.on('uploadClipboardFilesFromUploadPage', () => {
   uploadClipboardFiles()
 })

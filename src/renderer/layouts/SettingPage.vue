@@ -37,7 +37,7 @@
             </template>
             <template v-for="item in picBed">
               <el-menu-item v-if="item.visible" :index="`picbeds-${item.type}`" :key="item.type">
-                <!-- <i :class="`el-icon-ui-${item.type}`"></i> -->
+                <i :class="`el-icon-ui-${item.type}`"></i>
                 <span slot="title">{{ item.name }}</span>
               </el-menu-item>
             </template>
@@ -54,7 +54,7 @@
         <i class="el-icon-info setting-window" @click="openDialog"></i>
       </el-col>
 
-      <!-- 右侧上传部分 -->
+      <!-- 右侧内容部分 对应 /setting children部分-->
       <el-col :span="19" :offset="5" style="height: 428px" class="main-wrapper" :class="{ 'darwin': os === 'darwin' }">
         <transition name="picgo-fade" mode="out-in">
           <keep-alive>
@@ -66,7 +66,9 @@
         </transition>
       </el-col>
     </el-row>
-    <!-- <el-dialog
+
+    <!-- 赞助 PicGo 弹框 -->
+    <el-dialog
       title="赞助PicGo"
       :visible.sync="visible"
       width="70%"
@@ -79,11 +81,11 @@
           <div class="support-title">支付宝</div>
         </el-col>
         <el-col :span="12">
-          <img src="https://user-images.githubusercontent.com/12621342/34188201-212cda84-e570-11e7-9b7a-abb298699d85.jpg" alt="支付宝">
+          <img src="https://user-images.githubusercontent.com/12621342/34188201-212cda84-e570-11e7-9b7a-abb298699d85.jpg" alt="微信">
           <div class="support-title">微信</div>
         </el-col>
       </el-row>
-    </el-dialog> -->
+    </el-dialog>
     <!-- <el-dialog
       title="修改快捷键"
       :visible.sync="keyBindingVisible"
@@ -173,6 +175,10 @@ export default {
     return {
       version: process.env.NODE_ENV === 'production' ? pkg.version : 'Dev',
       defaultActive: 'upload',
+      menu: null,
+      visible: false,
+      keyBindingVisible: false,
+      customLinkVisible: false,
       customLink: {
         value: db.read().get('customLink').value() || '$url'
       },
@@ -239,6 +245,7 @@ export default {
         {
           label: '赞助PicGo',
           click () {
+            // 对应el-dialog弹框（赞助PicGo）的显示和隐藏
             _this.visible = true
           }
         }
@@ -246,6 +253,7 @@ export default {
       this.menu = Menu.buildFromTemplate(template)
     },
     openDialog () {
+      // 打开左下角提示框 buildMenu
       this.menu.popup(remote.getCurrentWindow())
     },
     openMiniWindow () {

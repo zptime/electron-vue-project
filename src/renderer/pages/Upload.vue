@@ -2,9 +2,12 @@
   <div id="upload-view">
     <el-row :gutter="16">
       <el-col :span="20" :offset="2">
+        <!-- 头部title -->
         <div class="view-title">
           图片上传 - {{ picBedName }} <i class="el-icon-caret-bottom" @click="handleChangePicBed"></i>
         </div>
+
+        <!-- 上传区域 -->
         <div
           id="upload-area"
           :class="{ 'is-dragover': dragover }"
@@ -12,7 +15,7 @@
           @dragover.prevent="dragover = true"
           @dragleave.prevent="dragover = false"
         >
-          <div id="upload-dragger" @click="openUplodWindow">
+          <div id="upload-dragger" @click="openUploadWindow">
             <i class="el-icon-upload"></i>
             <div class="upload-dragger__text">
               将文件拖到此处，或 <span>点击上传</span>
@@ -20,6 +23,8 @@
             <input type="file" id="file-uploader" @change="onChange" multiple>
           </div>
         </div>
+
+        <!-- 上传进度条 -->
         <el-progress
           :percentage="progress"
           :show-text="false"
@@ -27,23 +32,22 @@
           :class="{ 'show': showProgress }"
           :status="showError ? 'exception' : 'text'"
         ></el-progress>
+
+        <!-- 底部操作栏 -->
         <div class="paste-style">
           <div class="el-col-16">
             <div class="paste-style__text">
               链接格式
             </div>
-            <el-radio-group v-model="pasteStyle" size="mini"
-              @change="handlePasteStyleChange"
-            >
-              <el-radio-button label="markdown">
-                Markdown
-              </el-radio-button>
+            <el-radio-group v-model="pasteStyle" size="mini" @change="handlePasteStyleChange">
+              <el-radio-button label="markdown">Markdown</el-radio-button>
               <el-radio-button label="HTML"></el-radio-button>
               <el-radio-button label="URL"></el-radio-button>
               <el-radio-button label="UBB"></el-radio-button>
               <el-radio-button label="Custom" title="自定义"></el-radio-button>
             </el-radio-group>
           </div>
+
           <div class="el-col-8">
             <div class="paste-style__text">
               快捷上传
@@ -111,7 +115,7 @@ export default {
       this.dragover = false
       this.ipcSendFiles(e.dataTransfer.files)
     },
-    openUplodWindow () {
+    openUploadWindow () {
       document.getElementById('file-uploader').click()
     },
     onChange (e) {
@@ -152,7 +156,7 @@ export default {
       this.getDefaultPicBed()
     },
     handleChangePicBed () {
-      this.buildMenu()
+      this.buildMenu() // 图床类型单选框
       this.menu.popup(this.$electron.remote.getCurrentWindow())
     },
     buildMenu () {

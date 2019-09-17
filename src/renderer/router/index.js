@@ -28,13 +28,21 @@ export default new Router({
     {
       path: '/setting',
       name: 'setting-page',
-      component: require('@/layouts/SettingPage').default,
+      component: require('@/layouts/SettingPage').default, // 框架页
       children: [
         {
           path: 'upload',
-          component: require('@/pages/Upload').default,
+          component: require('@/pages/Upload').default, // 首页 图片上传
           name: 'upload'
         }
+        // {
+        //   path: 'gallery',
+        //   component: require('@/pages/Gallery').default,
+        //   name: 'gallery',
+        //   meta: {
+        //     keepAlive: true
+        //   }
+        // }
       ]
     },
     {

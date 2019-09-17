@@ -54,3 +54,9 @@ npm run lint
 * [跨平台兼容](https://molunerfinn.com/electron-vue-4/)
 * main进程相关配置及通信配置：main/index.js，main/utils
 * 上传页面 @/pages/Upload
+警告：[Vue warn]: Invalid prop: custom validator check failed for prop "status".
+
+### v0.0.4 一级导航页
+
+* gallery 相册 vue-gallery
+报错：Uncaught e:\local\electron-vue-project\node_modules\blueimp-gallery\css\blueimp-gallery.min.css:1
