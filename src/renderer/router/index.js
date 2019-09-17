@@ -49,8 +49,13 @@ export default new Router({
           name: 'setting'
         },
         {
+          path: 'plugin',
+          component: require('@/pages/Plugin').default, // 插件设置
+          name: 'plugin'
+        },
+        {
           path: 'shortcut-page',
-          component: require('@/pages/ShortCutPage').default,
+          component: require('@/pages/ShortCutPage').default, // 修改快捷键
           name: 'shortcut-page'
         }
       ]

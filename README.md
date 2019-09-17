@@ -60,3 +60,5 @@ npm run lint
 
 * gallery 相册 vue-gallery
 报错：Uncaught e:\local\electron-vue-project\node_modules\blueimp-gallery\css\blueimp-gallery.min.css:1
+* picgo设置 PicGoSetting.vue  ShortCutPage.vue(修改快捷键)
+* plugin 插件设置 Plugin.vue  components/ConfigForm.vue  lodash
